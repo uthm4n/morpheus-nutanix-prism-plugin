@@ -214,23 +214,23 @@ class NutanixPrismProvisionProvider extends AbstractProvisionProvider {
 	Collection<ServicePlan> getServicePlans() {
 		def servicePlans = []
 		servicePlans << new ServicePlan([code:'nutanix-prism-vm-512', name:'1 vCPU, 512MB Memory', description:'1 vCPU, 512MB Memory', sortOrder:0,
-				maxStorage:10l * 1024l * 1024l * 1024l, maxMemory: 1l * 512l * 1024l * 1024l, maxCores:1, 
+				maxStorage:10l * 1024l * 1024l * 1024l, maxMemory: 1l * 512l * 1024l * 1024l, maxCores:1,
 				customMaxStorage:true, customMaxDataStorage:true, addVolumes:true])
 
 		servicePlans << new ServicePlan([code:'nutanix-prism-vm-1024', name:'1 vCPU, 1GB Memory', description:'1 vCPU, 1GB Memory', sortOrder:1,
-				maxStorage: 10l * 1024l * 1024l * 1024l, maxMemory: 1l * 1024l * 1024l * 1024l, maxCores:1, 
+				maxStorage: 10l * 1024l * 1024l * 1024l, maxMemory: 1l * 1024l * 1024l * 1024l, maxCores:1,
 				customMaxStorage:true, customMaxDataStorage:true, addVolumes:true])
 
 		servicePlans << new ServicePlan([code:'nutanix-prism-vm-2048', name:'1 vCPU, 2GB Memory', description:'1 vCPU, 2GB Memory', sortOrder:2,
-				maxStorage: 20l * 1024l * 1024l * 1024l, maxMemory: 2l * 1024l * 1024l * 1024l, maxCores:1, 
+				maxStorage: 20l * 1024l * 1024l * 1024l, maxMemory: 2l * 1024l * 1024l * 1024l, maxCores:1,
 				customMaxStorage:true, customMaxDataStorage:true, addVolumes:true])
 
 		servicePlans << new ServicePlan([code:'nutanix-prism-vm-4096', name:'1 vCPU, 4GB Memory', description:'1 vCPU, 4GB Memory', sortOrder:3,
-				maxStorage: 40l * 1024l * 1024l * 1024l, maxMemory: 4l * 1024l * 1024l * 1024l, maxCores:1, 
+				maxStorage: 40l * 1024l * 1024l * 1024l, maxMemory: 4l * 1024l * 1024l * 1024l, maxCores:1,
 				customMaxStorage:true, customMaxDataStorage:true, addVolumes:true])
 
 		servicePlans << new ServicePlan([code:'nutanix-prism-vm-8192', name:'2 vCPU, 8GB Memory', description:'2 vCPU, 8GB Memory', sortOrder:4,
-				maxStorage: 80l * 1024l * 1024l * 1024l, maxMemory: 8l * 1024l * 1024l * 1024l, maxCores:2, 
+				maxStorage: 80l * 1024l * 1024l * 1024l, maxMemory: 8l * 1024l * 1024l * 1024l, maxCores:2,
 				customMaxStorage:true, customMaxDataStorage:true, addVolumes:true])
 
 		servicePlans << new ServicePlan([code:'nutanix-prism-vm-16384', name:'2 vCPU, 16GB Memory', description:'2 vCPU, 16GB Memory', sortOrder:5,
@@ -238,11 +238,11 @@ class NutanixPrismProvisionProvider extends AbstractProvisionProvider {
 				customMaxStorage:true, customMaxDataStorage:true, addVolumes:true])
 
 		servicePlans << new ServicePlan([code:'nutanix-prism-vm-24576', name:'4 vCPU, 24GB Memory', description:'4 vCPU, 24GB Memory', sortOrder:6,
-				maxStorage: 240l * 1024l * 1024l * 1024l, maxMemory: 24l * 1024l * 1024l * 1024l, maxCores:4, 
+				maxStorage: 240l * 1024l * 1024l * 1024l, maxMemory: 24l * 1024l * 1024l * 1024l, maxCores:4,
 				customMaxStorage:true, customMaxDataStorage:true, addVolumes:true])
 
 		servicePlans << new ServicePlan([code:'nutanix-prism-vm-32768', name:'4 vCPU, 32GB Memory', description:'4 vCPU, 32GB Memory', sortOrder:7,
-				maxStorage: 320l * 1024l * 1024l * 1024l, maxMemory: 32l * 1024l * 1024l * 1024l, maxCores:4, 
+				maxStorage: 320l * 1024l * 1024l * 1024l, maxMemory: 32l * 1024l * 1024l * 1024l, maxCores:4,
 				customMaxStorage:true, customMaxDataStorage:true, addVolumes:true])
 
 		servicePlans << new ServicePlan([code:'nutanix-prism-internal-custom', editable:false, name:'Nutanix Custom', description:'Nutanix Custom', sortOrder:0,
@@ -574,8 +574,10 @@ class NutanixPrismProvisionProvider extends AbstractProvisionProvider {
 			//check if ip changed and update
 			def serverResource = serverDetails?.data?.spec?.resources
 			def ipAddress = null
-			if(serverDetails.success == true && serverResource.nic_list?.size() > 0 && serverResource.nic_list.collect { it.ip_endpoint_list }.collect {it.ip}.flatten().find{NutanixPrismComputeUtility.checkIpv4Ip(it)} ) {
+			def macAddress = null
+			if(serverDetails.success == true && serverResource.nic_list?.size() > 0 && serverResource.nic_list.collect { it.ip_endpoint_list }.collect {it.ip}.flatten().find{NutanixPrismComputeUtility.checkIpv4Ip(it)} && serverResource.nic_list.collect {it.mac_address}.flatten().find{NutanixPrismComputeUtility.checkMacAddressIsValid(it)}) {
 				ipAddress = serverResource.nic_list.collect { it.ip_endpoint_list }.collect {it.ip}.flatten().find{NutanixPrismComputeUtility.checkIpv4Ip(it)}
+				macAddress = serverResource.nic_list.collect {it.mac_address}.flatten().find{NutanixPrismComputeUtility.checkMacAddressIsValid(it)}
 			}
 			def privateIp = ipAddress
 			def publicIp = ipAddress
@@ -695,8 +697,10 @@ class NutanixPrismProvisionProvider extends AbstractProvisionProvider {
 			//check if ip changed and update
 			def serverResource = serverDetails?.data?.spec?.resources
 			def ipAddress = null
-			if(serverDetails.success == true && serverResource.nic_list?.size() > 0 && serverResource.nic_list.collect { it.ip_endpoint_list }.collect {it.ip}.flatten().find{NutanixPrismComputeUtility.checkIpv4Ip(it)} ) {
+			def macAddress = null
+			if(serverDetails.success == true && serverResource.nic_list?.size() > 0 && serverResource.nic_list.collect { it.ip_endpoint_list }.collect {it.ip}.flatten().find{NutanixPrismComputeUtility.checkIpv4Ip(it)} && serverResource.nic_list.collect {it.mac_address}.flatten().find{NutanixPrismComputeUtility.checkMacAddressIsValid(it)} ) {
 				ipAddress = serverResource.nic_list.collect { it.ip_endpoint_list }.collect {it.ip}.flatten().find{NutanixPrismComputeUtility.checkIpv4Ip(it)}
+				macAddress = serverResource.nic_list.collect {it.mac_address}.flatten().find{NutanixPrismComputeUtility.checkMacAddressIsValid(it)}
 			}
 			def privateIp = ipAddress
 			def publicIp = ipAddress
@@ -880,6 +884,7 @@ class NutanixPrismProvisionProvider extends AbstractProvisionProvider {
 				rtn.success = serverDetails.success
 				rtn.publicIp = serverDetails.ipAddress
 				rtn.privateIp = serverDetails.ipAddress
+				rtn.macAddress = serverDetails.macAddress
 				rtn.hostname = serverDetails.name
 				return ServiceResponse.success(rtn)
 
@@ -1433,7 +1438,7 @@ class NutanixPrismProvisionProvider extends AbstractProvisionProvider {
 	}
 
 	private buildHostRunConfig(ComputeServer server, HostRequest hostRequest, String imageExternalId, Map opts) {
-		
+
 		Cloud cloud = server.cloud
 		StorageVolume rootVolume = server.volumes?.find{it.rootVolume == true}
 
@@ -1595,6 +1600,13 @@ class NutanixPrismProvisionProvider extends AbstractProvisionProvider {
 						]
 					]
 				}
+				if(networkInterface.macAddress) {
+					networkConfig["mac_address"] = [
+							[
+					        "mac_address": networkInterface.macAddress
+						]
+					]
+				}
 				nicList << networkConfig
 			}
 		}
@@ -1614,6 +1626,13 @@ class NutanixPrismProvisionProvider extends AbstractProvisionProvider {
 						networkConfig["ip_endpoint_list"] = [
 							[
 								"ip": networkInterface.ipAddress
+							]
+						]
+					}
+					if(networkInterface.macAddress) {
+						networkConfig["mac_address"] = [
+							[
+					        	"mac_address": networkInterface.macAddress
 							]
 						]
 					}
@@ -1836,9 +1855,11 @@ class NutanixPrismProvisionProvider extends AbstractProvisionProvider {
 
 								def privateIp = serverDetail.ipAddress
 								def publicIp = serverDetail.ipAddress
+								def macAddress = serverDetail.macAddress
 								server.internalIp = privateIp
 								server.externalIp = publicIp
 								server.resourcePool = resourcePool
+								server.macAddress = macAddress
 
 								//update disks
 								def disks = serverDetail.diskList

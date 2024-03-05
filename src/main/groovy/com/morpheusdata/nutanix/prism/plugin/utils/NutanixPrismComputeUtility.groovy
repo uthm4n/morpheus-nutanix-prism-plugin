@@ -908,10 +908,11 @@ class NutanixPrismComputeUtility {
 				def serverDetail = getVm(client, authConfig, vmId)
 				log.debug("serverDetail: ${serverDetail}")
 				def serverResource = serverDetail?.data?.spec?.resources
-				if(serverDetail.success == true && serverResource.power_state == 'ON' && serverResource.nic_list?.size() > 0 && serverResource.nic_list.collect { it.ip_endpoint_list }.collect {it.ip}.flatten().find{checkIpv4Ip(it)} ) {
+				if(serverDetail.success == true && serverResource.power_state == 'ON' && serverResource.nic_list?.size() > 0 && serverResource.nic_list.collect { it.ip_endpoint_list }.collect {it.ip}.flatten().find{checkIpv4Ip(it)} && serverResource.nic_list.collect {it.mac_address}.flatten().find{NutanixPrismComputeUtility.checkMacAddressIsValid(it)}) {
 					rtn.success = true
 					rtn.virtualMachine = serverDetail.data
 					rtn.ipAddress = serverResource.nic_list.collect { it.ip_endpoint_list }.collect {it.ip}.flatten().find{checkIpv4Ip(it)}
+					rtn.macAddress = serverResource.nic_list.collect {it.mac_address}.flatten().find{checkMacAddressIsValid(it)}
 					rtn.diskList = serverResource.disk_list
 					rtn.name = serverDetail?.data?.spec?.name
 					pending = false
@@ -962,6 +963,28 @@ class NutanixPrismComputeUtility {
 		if(ipAddress) {
 			if(ipAddress.indexOf('.') > 0 && !ipAddress.startsWith('169'))
 				rtn = true
+		}
+		return rtn
+	}
+
+	static checkMacAddressIsValid(macAddress) {
+		def rtn = false
+		if (macAddress) {
+			if (macAddress.indexOf(':') < 5 && macAddress.length() != 17 && macAddress.split(':').size() != 6) {
+				rtn = false
+			}
+			def chunks = macAddress.split(':')
+			try {
+				chunks.each { chunk ->
+					if (chunk.length() != 2) {
+						throw new NumberFormatException("Mac address is not 6 valid chunks of 2")
+					}
+					Integer.parseInt(chunk, 16)
+				}
+			} catch (NumberFormatException e) {
+				rtn = false
+			}
+			rtn = true
 		}
 		return rtn
 	}
