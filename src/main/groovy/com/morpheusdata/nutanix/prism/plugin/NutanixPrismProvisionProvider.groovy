@@ -884,7 +884,6 @@ class NutanixPrismProvisionProvider extends AbstractProvisionProvider {
 				rtn.success = serverDetails.success
 				rtn.publicIp = serverDetails.ipAddress
 				rtn.privateIp = serverDetails.ipAddress
-				rtn.macAddress = serverDetails.macAddress
 				rtn.hostname = serverDetails.name
 				return ServiceResponse.success(rtn)
 
